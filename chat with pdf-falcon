@@ -1,0 +1,31 @@
+import streamlit as st
+import fitz
+from transformers import pipeline
+
+st.title("Falcon App - Chat with your docs")
+
+uploaded_file = st.file_uploader("Upload PDF", type=["pdf"])
+
+if uploaded_file is not None:
+    st.write("File Uploaded Successfully!")
+
+    # Extract text from PDF using PyMuPDF
+    pdf_text = ""
+    with fitz.open(stream=uploaded_file.read(), filetype="pdf") as doc:
+        for page_num in range(doc.page_count):
+            page = doc[page_num]
+            pdf_text += page.get_text()
+    # Convert text to UTF-8 encoding
+    pdf_text = pdf_text.encode('utf-8').decode('utf-8')
+
+    # Load a pre-trained model from Hugging Face for question answering
+    qa_model = pipeline('question-answering', model='distilbert-base-cased-distilled-squad', tokenizer='distilbert-base-cased')
+
+    user_question = st.text_input("Ask a question:")
+
+    if user_question:
+        # Use the model to generate an answer
+        answer = qa_model(question=user_question, context=pdf_text)
+
+        st.subheader("Answer:")
+        st.write(answer['answer'])
